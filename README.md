@@ -6,11 +6,11 @@ this will deleette every line containing Pattern in \*.extension1 and \*.extensi
 To act in recursive mmode, add -r
 
 -h return the following:
-
+```
 Code_Cleaner tool deletes from your source code files the lines containing a given pattern.
 
 Returns the file modified and a .bkp file which is a backup."
-```
+
 usage : Code_Cleaner {-option}"
 
 options :
