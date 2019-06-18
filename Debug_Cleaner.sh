@@ -168,8 +168,8 @@ if [ "$FORCE" -ne true ];then
 	while true; do
 	    read -p "Are you sure? Yes [Y/y] or No [N/n]?" yn
 	    case $yn in
-	        [Yy]* ) make install; break;;
-	        [Nn]* ) exit;;
+	        [Yy]* ) break;;
+	        [Nn]* ) exit 1;;
 	        * ) echo "Please answer Y/y or N/n.";;
 	    esac
 	done
