@@ -7,12 +7,20 @@ set -o errexit -o pipefail -o noclobber -o nounset
 # -use return value from ${PIPESTATUS[0]}, because ! hosed $?
 ! getopt --test > /dev/null 
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
-    echo 'I’m sorry, `getopt --test` failed in this environment.'
+    echo "I’m sorry, 'getopt --test' failed in this environment."
     exit 1
 fi
 
-EXTS={".cpp",".hpp",".c",".h",".java",".mat",".sh",".css",".html",".php"}
-RECURSIVE=true
+# Specifying all the variables
+EXTS=(".cpp" ".hpp" ".c" ".h" ".java" ".mat" ".sh" ".css" ".html" ".php")
+FOLD=""
+PATTERN=""
+NEXTS=()
+FILES=()
+RECURSIVE=false
+VERBOSE=false
+FORCE=false
+BACKUP=true
 
 # -f to specify a folder
 # -e to add an extension to the list of extensions to work option
@@ -21,10 +29,13 @@ RECURSIVE=true
 # -s to create saves (will create new files cleaned and keep old files as is) TO USE IF YOU ARE NOT CONFIDENT IN WHERE YOU HAVE ADDED YOU DEBUG PATTERN
 
 help() {
+	echo ""
 	echo "Code_Cleaner tool deletes from your source code files the lines containing a given pattern."
 	echo ""
+	echo "Returns the file modified and a .bkp file which is a backup."
 	echo ""
-	echo "usage: Code_Cleaner {-option}"
+	echo "usage : Code_Cleaner {-option}"
+	echo ""
 	echo "options :"
 	echo "		-p | --pattern : specify the pattern to look for."
 	echo '			usage : Debug_Cleaner -p "//Debug_pattern"'
@@ -45,21 +56,23 @@ help() {
 	echo "		-n | --exclude-extensions : Specify extensions to avoid, files woth those extensions won't be treated."
 	echo '			usage : Debug_Cleaner -n {".ext",".ext2",...}'
 	echo ""
+	echo "		-b | --no-backup : Do not make any backup."
+	echo ""
 	echo "		-y | --yes : Do not show warning messages"
 	echo '			usage : Debug_Cleaner -y'
-	ehco ""
+	echo ""
 	echo "		-h | --help | ? : shows this help message"
 	exit 0;
 }
 
-SHORTOPT=p:d:e:E:rvyn:h?
-LONGOPT=pattern:,directory:,add-extensions:,only-extensions:,recursive,verbose,exclude-extensions:,help,yes
+SHORTOPT=p:d:e:E:rvybn:h?
+LONGOPT=pattern:,directory:,add-extensions:,only-extensions:,recursive,verbose,no-backup,exclude-extensions:,help,yes
 
 # -regarding ! and PIPESTATUS see above
 # -temporarily store output to be able to check for errors
 # -activate quoting/enhanced mode (e.g. by writing out “--options”)
 # -pass arguments only via   -- "$@"   to separate them correctly
-! PARSED=$(getopt --options=$SHORTOPT --longoptions=$LONGOPT --name "$0" -- "$@")
+! PARSED=$(getopt --options="$SHORTOPT" --longoptions="$LONGOPT" --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
     # e.g. return value is 1
     #  then getopt has complained about wrong arguments to stdout
@@ -69,25 +82,24 @@ fi
 # read getopt’s output this way to handle the quoting right:
 eval set -- "$PARSED"
 
-
-
 while true; do
 	case "$1" in
 		-d|--directory) 
 			FOLD=$2
-			shift
+			shift 2
 			;;
-		-p|--pattern) 
+		-p|--pattern)
 			PATTERN="$2"
-			shift
+			echo "${PATTERN}"
+			shift 2
 			;;
 		-e|--add-extensions) 
-			EXTS=${EXTS}+$2
-			shift
+			EXTS+=("$2")
+			shift 2
 			;;
 		-E|--only-extensions) 
-			EXTS=$2
-			shift
+			EXTS=("$2")
+			shift 2
 			;;
 		-r|--recursive) 
 			RECURSIVE=true
@@ -98,8 +110,8 @@ while true; do
 			shift
 			;;
 		-n|--exclude-extensions) 
-			NEXTS=$2
-			shift
+			NEXTS+=("$2")
+			shift 2
 			;;
 		-y|--yes)
 			FORCE=true
@@ -108,8 +120,16 @@ while true; do
 		-h|--help|"?") 
 			help
 			;;
+		-b|--no-backup)
+			BACKUP=false
+			shift
+			;;
+		--)
+            shift
+            break
+            ;;
 		*)
-			echo "An error occured in your arguments."
+			echo "An error occured in your arguments, unknown parameter $1"
 			exit 2
 			;;
 	esac;
@@ -117,18 +137,12 @@ done;
 
 
 echo "Welcome in Code_Cleaner tool"
-if[ -z "${PATTERN}"];then
+if [ -z "${PATTERN}" ]; then
 	echo "No pattern set, setting to DEBUG "
 	PATTERN="DEBUG";
 fi
 
-if [ -z "${FOLD}" ];then
-	if [ "$VERBOSE" = true ];then 
-		echo "This tool will clean all files with the following extensions in the current folder:"
-		echo "$EXTS";
-		echo "The defined pattern is : "
-		echo "$PATTERN"
-	fi
+if [ -z "${FOLD}" ]; then
 	FOLD=$(pwd);
 fi;
 
@@ -141,32 +155,37 @@ if [ ! -d "${FOLD}" ];then
 	exit 3;
 fi;
 
-if [ -z "$NEXTS" ];then
-	for e in $EXTS
+if [ ${#NEXTS[@]} -ne 0 ];then
+	for ne in "${NEXTS[@]}"
 	do
-		FILES+=$(ls "${FOLD}" | grep "$e");
+		EXTS=("${EXTS[@]#*"$ne"*}")
 	done;
-else
-	$NEXTS | grep "$e"
-	if [ -z $? ];then
-		for e in $EXTS
-		do
-			FILES+=$(ls "${FOLD}" | grep "$e");
-		done;
+fi
+
+for e in "${EXTS[@]}"
+do
+	echo "$e"
+	if [ "$RECURSIVE" = true ]; then find "${FOLD}" -type f \( -iname "*"$e"" \) && for i in $(find "${FOLD}" -type f \( -iname "*"$e"" \)); do FILES+=("$i"); done;
+	else find "${FOLD}" -maxdepth 1 -type f \( -iname "*"$e"" \) && for i in $(find "${FOLD}" -maxdepth 1 -type f \( -iname "*"$e"" \)); do FILES+=("$i"); done;
 	fi;
-fi;
+done;
 
-if [ -z "$FILES" ];then
+if [ ${#FILES[@]} -eq 0 ];then
 	echo "There are no files to process with the given extensions"
+	exit 1;
 fi;
 
-echo "We are going to remove all the lines containing ${PATTERN} in the files from the extensions : $EXTS"
+
+echo "We are going to remove all the lines containing ${PATTERN} in the files of the following extension(s) : "
+echo "${EXTS[@]}"
 echo "contained in the following directory: ${FOLD}"
 if [ "$RECURSIVE" = true ]; then echo "and subdirectories."; fi;
 
-if [ "$FORCE" -ne true ];then
+if [ ! "$FORCE" = true ];then
 	while true; do
-	    read -p "Are you sure? Yes [Y/y] or No [N/n]?" yn
+	    read -p "Are you sure? Yes [Y/y] or No [N/n]?
+note: to avoid this warning, use -y option
+" yn
 	    case $yn in
 	        [Yy]* ) break;;
 	        [Nn]* ) exit 1;;
@@ -174,3 +193,18 @@ if [ "$FORCE" -ne true ];then
 	    esac
 	done
 fi
+
+if [ "$VERBOSE" = true ]; then 
+	echo "The files to be treated are :"
+	echo "${FILES[@]}"
+fi;
+
+
+for i in "${FILES[@]}"
+do
+	if [ "$VERBOSE" = true ]; then echo " Treating $i ..."; fi;
+		if [ "$BACKUP" = true ]; then grep -v "$PATTERN" "$i" > "$i".tmp; mv "$i" "$i".bkp; mv "$i".tmp "$i";
+		else grep -v "$PATTERN" "$i" > "$i".tmp; mv "$i".tmp "$i";
+	fi;
+done;
+exit 0
