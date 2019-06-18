@@ -40,3 +40,6 @@ options :
 
 		-h | --help | ? : shows this help message
 ```
+
+## CONTRIBUTION
+Please do not hesitate and send me any ideas you would have to enhance this tool.
