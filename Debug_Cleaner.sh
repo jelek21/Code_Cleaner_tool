@@ -74,7 +74,7 @@ eval set -- "$PARSED"
 while true; do
 	case "$1" in
 		-d|--directory) 
-			FOLD=$OPTARG
+			FOLD=$2
 			shift
 			;;
 		-p|--pattern) 
@@ -82,11 +82,11 @@ while true; do
 			shift
 			;;
 		-e|--add-extensions) 
-			EXTS=${EXTS}+${OPTARG}
+			EXTS=${EXTS}+$2
 			shift
 			;;
 		-E|--only-extensions) 
-			EXTS=${OPTARG}
+			EXTS=$2
 			shift
 			;;
 		-r|--recursive) 
@@ -98,7 +98,7 @@ while true; do
 			shift
 			;;
 		-n|--exclude-extensions) 
-			NEXTS=${OPTARG}
+			NEXTS=$2
 			shift
 			;;
 		-y|--yes)
@@ -107,6 +107,10 @@ while true; do
 			;;
 		-h|--help|"?") 
 			help
+			;;
+		*)
+			echo "An error occured in your arguments."
+			exit 2
 			;;
 	esac;
 done;
