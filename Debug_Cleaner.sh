@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 
 # saner programming env: these switches turn some bugs into errors
 set -o errexit -o pipefail -o noclobber -o nounset
@@ -44,17 +44,17 @@ help() {
 	echo '			usage : Debug_Cleaner -f "Path/to/the/directory"'
 	echo ""
 	echo "		-e | --add-extensions : specify extensions to add to the already default extensions to work on."
-	echo '			usage : Debug_Cleaner -e {".ext",".ext2",...}'
+	echo '			usage : Debug_Cleaner -e (".ext" ".ext2" ...)'
 	echo ""
 	echo "		-E | --only-extensions : Specify the only extensions to work on"
-	echo '			usage : Debug_Cleaner -E {".ext",".ext2",...}'
+	echo '			usage : Debug_Cleaner -E (".ext" ".ext2" ...)'
 	echo ""
 	echo "		-r | --recursive : Recursive mode, will work on the working directory and subfolders."
 	echo ""
 	echo "		-v | --verbose : Verbose mode, will print informations during process"
 	echo ""
 	echo "		-n | --exclude-extensions : Specify extensions to avoid, files woth those extensions won't be treated."
-	echo '			usage : Debug_Cleaner -n {".ext",".ext2",...}'
+	echo '			usage : Debug_Cleaner -n (".ext" ".ext2" ...)'
 	echo ""
 	echo "		-b | --no-backup : Do not make any backup."
 	echo ""
