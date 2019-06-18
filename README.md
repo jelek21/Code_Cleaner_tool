@@ -10,7 +10,7 @@ To act in recursive mmode, add -r
 Code_Cleaner tool deletes from your source code files the lines containing a given pattern.
 
 Returns the file modified and a .bkp file which is a backup."
-`
+```
 usage : Code_Cleaner {-option}"
 
 options :
@@ -39,4 +39,4 @@ options :
 			usage : Debug_Cleaner -y
 
 		-h | --help | ? : shows this help message
-`
+```
